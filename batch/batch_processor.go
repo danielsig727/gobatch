@@ -49,7 +49,8 @@ type batchProcessorImpl struct {
 
 	submissionChan chan submission
 	cancelChan     chan bool
-	wg             sync.WaitGroup
+
+	wg sync.WaitGroup
 }
 
 func NewBatchProcessor(task Task, maxBatchSize int, timeout time.Duration) (BatchProcessor, error) {

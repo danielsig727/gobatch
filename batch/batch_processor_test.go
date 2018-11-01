@@ -33,9 +33,9 @@ func (t *testTask) Process(batch *BatchData) *BatchResult {
 	}
 	fmt.Printf("got batch data: %v\n", data)
 
-	t.procLock.Lock()
-	t.processed = append(t.processed, data)
-	t.procLock.Unlock()
+	// t.procLock.Lock()
+	// t.processed = append(t.processed, data)
+	// t.procLock.Unlock()
 
 	return &BatchResult{
 		Data: result,
@@ -71,7 +71,7 @@ func TestBatchProcessor(t *testing.T) {
 	defer bp.Stop()
 
 	var (
-		maxWorkers = 1000
+		maxWorkers = 100
 		sem        = semaphore.NewWeighted(int64(maxWorkers))
 		nData      = 100000
 	)
@@ -90,11 +90,18 @@ func TestBatchProcessor(t *testing.T) {
 			defer sem.Release(1)
 
 			currCtx, canc := context.WithCancel(ctx)
+			time_start := time.Now()
+			for i := 0; i < 20; i++ {
+				<-time.After(time.Millisecond)
+			}
+			time_submit := time.Now()
 			rChan, err := bp.Submit(currCtx, &idx)
 			assert.NoError(t, err)
 			select {
 			case result := <-rChan:
-				fmt.Printf("[%d] got %v\n", idx, *(result.(*int)))
+				latency := time.Now().Sub(time_start)
+				fmt.Printf("[%d] got %v, latency = %v, waiting = %v\n", idx, *(result.(*int)),
+					latency, time_submit.Sub(time_start))
 				canc()
 				return
 			case <-time.After(5 * time.Second):
